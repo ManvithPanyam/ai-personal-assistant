@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Personal Assistant</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="header">
+        <div>
+          <h1 class="title">Personal Assistant</h1>
+          <p class="subtitle">Google ADK • Gemini 2.5 Flash</p>
+        </div>
+      </header>
+
+      <section id="chat" class="chat" aria-label="Chat messages"></section>
+
+      <form id="composer" class="composer" autocomplete="off">
+        <input
+          id="messageInput"
+          class="composer__input"
+          type="text"
+          placeholder="Type a message…"
+          aria-label="Message"
+          required
+        />
+        <button id="sendButton" class="composer__button" type="submit">Send</button>
+      </form>
+
+      <p class="footnote">
+        Tip: your conversation is kept while this tab is open.
+      </p>
+    </main>
+
+    <script src="/static/script.js"></script>
+  </body>
+</html>
