@@ -21,7 +21,12 @@ function setSessionId(id) {
 }
 
 function scrollToBottom() {
-  chatEl.scrollTop = chatEl.scrollHeight;
+  // Keep the latest message visible.
+  try {
+    chatEl.scrollTo({ top: chatEl.scrollHeight, behavior: "smooth" });
+  } catch {
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
 }
 
 function nowLabel() {
@@ -29,51 +34,48 @@ function nowLabel() {
 }
 
 function addMessage({ role, text, meta }) {
-  const row = document.createElement("div");
-  row.className = role === "user" ? "row row--user" : "row row--assistant";
+  const isUser = role === "user";
+
+  const message = document.createElement("div");
+  message.className = isUser ? "message message--user" : "message message--assistant";
 
   const bubble = document.createElement("div");
-  bubble.className = role === "user" ? "bubble bubble--user" : "bubble bubble--assistant";
+  bubble.className = isUser ? "bubble bubble--user" : "bubble bubble--assistant";
   bubble.textContent = text;
 
-  row.appendChild(bubble);
+  message.appendChild(bubble);
 
   if (meta) {
     const metaEl = document.createElement("div");
-    metaEl.className = "meta";
+    metaEl.className = isUser ? "meta meta--user" : "meta meta--assistant";
     metaEl.textContent = meta;
-
-    const wrap = document.createElement("div");
-    wrap.appendChild(row);
-    wrap.appendChild(metaEl);
-
-    chatEl.appendChild(wrap);
-  } else {
-    chatEl.appendChild(row);
+    message.appendChild(metaEl);
   }
 
+  chatEl.appendChild(message);
   scrollToBottom();
   return bubble;
 }
 
 function addTypingIndicator() {
-  const row = document.createElement("div");
-  row.className = "row row--assistant";
+  const message = document.createElement("div");
+  message.className = "message message--assistant";
 
   const bubble = document.createElement("div");
   bubble.className = "bubble bubble--assistant";
 
   const typing = document.createElement("span");
   typing.className = "typing";
+  typing.setAttribute("aria-label", "Assistant is typing");
   typing.innerHTML =
-    '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+    '<span class="typing__label">Typing…</span><span class="dot"></span><span class="dot"></span><span class="dot"></span>';
 
   bubble.appendChild(typing);
-  row.appendChild(bubble);
-  chatEl.appendChild(row);
+  message.appendChild(bubble);
+  chatEl.appendChild(message);
   scrollToBottom();
 
-  return { row, bubble };
+  return { message };
 }
 
 async function sendMessage(message) {
@@ -110,7 +112,7 @@ function setBusy(isBusy) {
 // Seed the chat with a friendly first message.
 addMessage({
   role: "assistant",
-  text: "Hi! I’m your Personal Assistant. What can I help you with today?",
+  text: "Hi! I’m your AI Assistant. What can I help you with today?",
   meta: nowLabel(),
 });
 
@@ -128,10 +130,10 @@ formEl.addEventListener("submit", async (e) => {
 
   try {
     const reply = await sendMessage(text);
-    typing.row.remove();
+    typing.message.remove();
     addMessage({ role: "assistant", text: reply, meta: nowLabel() });
   } catch (err) {
-    typing.row.remove();
+    typing.message.remove();
     addMessage({
       role: "assistant",
       text: `Sorry — something went wrong.\n\n${err.message}`,

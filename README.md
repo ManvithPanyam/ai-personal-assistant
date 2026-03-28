@@ -1,55 +1,59 @@
-# Personal Assistant — Google ADK Agent (Gemini 2.5 Flash on Vertex AI)
+# Personal Assistant AI Web App
 
-## Overview
-**Personal Assistant** is a minimal, production-minded AI agent built with **Google ADK (Agent Development Kit)** and **Gemini 2.5 Flash** via **Vertex AI**. It’s designed to deliver **clear, structured answers** for everyday questions—quickly and reliably—while keeping the codebase intentionally small and easy to understand.
+A clean, recruiter-ready AI chat web app: a lightweight FastAPI backend wired to a Google ADK agent that answers with structured, friendly responses using Gemini.
 
-This project showcases how to package a clean, runnable ADK agent that’s ready to extend into more specialized assistants (study helper, planner, support bot, etc.).
+This repo is intentionally small and readable (no frontend frameworks, no complex backend layers) while still being “production-shaped”: clear configuration, minimal secrets risk, and a polished UI.
 
 ## Features
-- **Structured responses**: concise answers with bullets/headings when helpful
-- **Practical help**: explanations, summaries, drafting, and “how-to” guidance
-- **Minimal, readable code**: one agent definition (`root_agent`) with a polished instruction
-- **Vertex AI powered**: uses Gemini 2.5 Flash for fast, high-quality outputs
-- **CLI-first workflow**: runs cleanly via the ADK terminal interface
+- Fast, simple chat UI (no React)
+- Clear user vs assistant message layout
+- “Typing…” loading indicator + auto-scroll
+- Session persistence in the browser for multi-turn context
+- Structured assistant responses (headings/bullets when useful)
 
-## How It Works (High Level)
-- The project defines a single ADK agent called **`root_agent`** in `personal_assistant/agent.py`.
-- When you run the agent, ADK loads the package and uses the configured **Gemini 2.5 Flash** model.
-- A short, professional instruction prompt guides the assistant to respond with **helpful, clear, and well-structured** outputs.
+## How It Works
+UI (HTML/CSS/JS) → FastAPI (`POST /chat`) → Google ADK Agent → Gemini → response
 
 ## Tech Stack
-- **Python**
-- **Google ADK (Agent Development Kit)**
-- **Vertex AI**
-- **Gemini 2.5 Flash**
+- Python
+- FastAPI + Uvicorn
+- Google ADK (Agent Development Kit)
+- Gemini (via Google GenAI)
+- Jinja2 templates
+- Vanilla HTML/CSS/JS
 
-## Example Usage
-Use it for everyday assistance and clean, structured outputs:
+## Live Demo
+https://ai-personal-assistant-9ybs.onrender.com
 
-- “Summarize this topic in 5 bullets and a short conclusion.”
-- “Draft a professional email to reschedule a meeting.”
-- “Explain recursion like I’m new to programming, with a tiny example.”
-- “Give me a 30-minute study plan for today based on these goals: …”
+## Example Interaction
+**User:** Create a 30-minute study plan for learning Python lists.
 
-## Run Locally (Web UI)
-- Install dependencies: `pip install -r requirements.txt`
-- Start the server: `uvicorn app:app --reload`
-- Open: `http://127.0.0.1:8000`
+**Assistant:**
+- **Goal:** Understand list basics + common operations
+- **Plan (30 minutes):**
+  1. (5 min) Review list syntax + indexing
+  2. (10 min) Practice add/remove: `append`, `extend`, `pop`, `remove`
+  3. (10 min) Slicing + iteration
+  4. (5 min) Quick quiz + next steps
 
-If you see an authentication error, make sure your environment is authenticated for Vertex AI (ADC) and has access to the Gemini model you configured.
+## Run Locally
+1. Install dependencies:
+	- `pip install -r requirements.txt`
+2. Set environment variable:
+	- `GEMINI_API_KEY` (see below)
+3. Start the server:
+	- `uvicorn app:app --reload`
+4. Open:
+	- `http://127.0.0.1:8000`
 
-## Minimal Setup
-This repo intentionally avoids committing secrets (no `.env`). Run it in an environment that already has Google Cloud / Vertex AI authentication configured.
+## Environment Setup
+- `GEMINI_API_KEY` — your Gemini API key.
 
-- Install dependencies: `pip install -r requirements.txt`
-- Run the agent: `adk run personal_assistant`
+Notes:
+- The underlying SDK also supports `GOOGLE_API_KEY`. If you set `GEMINI_API_KEY`, the app maps it automatically.
 
-> Note: In some environments (e.g., Cloud Shell), the ADK web UI may be unreliable due to authentication constraints. The **CLI run flow** is the primary supported way to use this project.
-
-## Optional Improvements (Not Implemented)
-Ideas to extend this into a stronger multi-skill assistant:
-
-- **Study mode**: quizzes, flashcards, concept checks, spaced repetition prompts
-- **Planner mode**: daily agenda, prioritization, time-blocking suggestions
-- **Writing helper**: tone rewrites, resume bullet refinement, cover-letter drafts
-- **Tool use** (if/when your track covers it): small utilities like calculators, date helpers, or structured task workflows
+## Future Improvements
+- Add streaming responses (token-by-token) for faster perceived latency
+- Add message rendering for Markdown (code blocks, lists) with a small sanitizer
+- Add basic rate limiting and request IDs for better observability
+- Add optional server-side session storage (Redis / DB) for long-lived history

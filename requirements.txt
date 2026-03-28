@@ -2,4 +2,3 @@ google-adk
 fastapi
 uvicorn[standard]
 jinja2
-python-dotenv

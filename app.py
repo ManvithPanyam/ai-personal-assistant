@@ -9,11 +9,9 @@ Keep it beginner-friendly and minimal: one file backend, no frameworks on fronte
 
 from __future__ import annotations
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 import uuid
+import os
+import logging
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
@@ -26,13 +24,32 @@ from pydantic import BaseModel
 from google.adk.runners import InMemoryRunner
 
 # ADK runners in this version use google-genai types for messages.
-from google.genai.types import Content
+from google.genai.types import Content, Part
 
 # Import your existing agent (do not rewrite it).
 # Note: this repo uses a nested package layout:
 #   personal_assistant/ (project folder)
 #     personal_assistant/ (python package)
 from personal_assistant.personal_assistant.agent import root_agent
+
+
+logger = logging.getLogger("personal_assistant")
+
+
+def _configure_environment() -> None:
+    """Configure runtime env vars without requiring local env files.
+
+    Hosting platforms typically set environment variables directly.
+    For local runs, you can also export the vars in your shell.
+    """
+
+    # The google-genai SDK commonly reads `GOOGLE_API_KEY`.
+    # This project documents `GEMINI_API_KEY` for clarity.
+    if os.getenv("GEMINI_API_KEY") and not os.getenv("GOOGLE_API_KEY"):
+        os.environ["GOOGLE_API_KEY"] = os.environ["GEMINI_API_KEY"]
+
+
+_configure_environment()
 
 
 app = FastAPI(title="Personal Assistant", version="1.0.0")
@@ -106,7 +123,7 @@ async def chat(payload: ChatRequest) -> ChatResponse:
 
         # ADK expects a content-like object for the new user message.
         # The runner will call the configured Gemini model through Vertex AI.
-        new_message = Content(role="user", parts=[{"text": text}])
+        new_message = Content(role="user", parts=[Part(text=text)])
 
         # In this ADK version, run_async returns an *async generator* of events.
         events = []
@@ -120,17 +137,16 @@ async def chat(payload: ChatRequest) -> ChatResponse:
     except HTTPException:
         raise
     except Exception as exc:
-        # Common issues here are auth/config problems for Vertex AI.
+        logger.exception("Agent call failed")
+
         message = str(exc)
         if "No API key was provided" in message or "API key" in message:
             message = (
                 "Model authentication is not configured. "
-                "If you're using Vertex AI, ensure Application Default Credentials are set up "
-                "(e.g., `gcloud auth application-default login`) and that your Google Cloud project "
-                "has Vertex AI enabled. "
-                "If you're using the Gemini API (API key), set the appropriate API key env var. "
+                "Set `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) in your environment. "
                 f"Original error: {exc}"
             )
+
         raise HTTPException(status_code=500, detail=f"Agent call failed: {message}") from exc
 
 
