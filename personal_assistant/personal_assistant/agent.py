@@ -3,8 +3,7 @@ import os
 # FORCE Gemini API mode
 os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "0"
 
-# SET YOUR API KEY HERE
-os.environ["GOOGLE_API_KEY"] = "AIzaSyDf4P6ZZAsov42uW9MBu_P8G757_8oMjOg"
+# Set your API key via environment variable (do not hardcode secrets in code)
 
 """ADK agent definition for the Personal Assistant.
 
