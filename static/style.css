@@ -128,6 +128,16 @@ body {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text);
   cursor: pointer;
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+
+.composer__button:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+.composer__button:active {
+  transform: scale(0.99);
 }
 
 .composer__button:disabled {

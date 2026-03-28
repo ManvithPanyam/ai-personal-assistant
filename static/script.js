@@ -12,6 +12,31 @@ const sendBtn = document.getElementById("sendButton");
 // Persist session id across reloads in this browser.
 const SESSION_KEY = "pa_session_id";
 
+function configureMarkdown() {
+  // marked is loaded from CDN in index.html.
+  // If it isn't available for any reason, we fall back to plain text.
+  if (!window.marked) return;
+
+  // Avoid noisy IDs/emails munging and keep output predictable.
+  window.marked.setOptions({ headerIds: false, mangle: false });
+
+  // Minimal hardening: prevent javascript: links.
+  const renderer = new window.marked.Renderer();
+  renderer.link = (href, title, text) => {
+    const safeHref = typeof href === "string" ? href.trim() : "";
+    const isRelative = safeHref.startsWith("/") || safeHref.startsWith("#") || safeHref.startsWith("./");
+    const isHttp = safeHref.startsWith("http://") || safeHref.startsWith("https://") || safeHref.startsWith("mailto:");
+
+    const finalHref = isRelative || isHttp ? safeHref : "#";
+    const t = title ? ` title="${title.replace(/"/g, "&quot;")}"` : "";
+    return `<a href="${finalHref}"${t} target="_blank" rel="noopener noreferrer">${text}</a>`;
+  };
+
+  window.marked.use({ renderer });
+}
+
+configureMarkdown();
+
 function getSessionId() {
   return window.localStorage.getItem(SESSION_KEY);
 }
@@ -33,6 +58,26 @@ function nowLabel() {
   return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function setBubbleContent(bubbleEl, role, text) {
+  const isAssistant = role !== "user";
+
+  if (isAssistant && window.marked) {
+    // Escape HTML first to avoid raw HTML injection.
+    const safeSource = escapeHtml(text);
+    bubbleEl.innerHTML = window.marked.parse(safeSource);
+    return;
+  }
+
+  bubbleEl.textContent = text;
+}
+
 function addMessage({ role, text, meta }) {
   const isUser = role === "user";
 
@@ -41,7 +86,7 @@ function addMessage({ role, text, meta }) {
 
   const bubble = document.createElement("div");
   bubble.className = isUser ? "bubble bubble--user" : "bubble bubble--assistant";
-  bubble.textContent = text;
+  setBubbleContent(bubble, role, text);
 
   message.appendChild(bubble);
 
@@ -57,12 +102,9 @@ function addMessage({ role, text, meta }) {
   return bubble;
 }
 
-function addTypingIndicator() {
-  const message = document.createElement("div");
-  message.className = "message message--assistant";
-
-  const bubble = document.createElement("div");
-  bubble.className = "bubble bubble--assistant";
+function addTypingMessage() {
+  // Lightweight loading indicator: add a real assistant message and replace its contents.
+  const bubble = addMessage({ role: "assistant", text: "Typing…", meta: nowLabel() });
 
   const typing = document.createElement("span");
   typing.className = "typing";
@@ -70,12 +112,11 @@ function addTypingIndicator() {
   typing.innerHTML =
     '<span class="typing__label">Typing…</span><span class="dot"></span><span class="dot"></span><span class="dot"></span>';
 
+  bubble.textContent = "";
   bubble.appendChild(typing);
-  message.appendChild(bubble);
-  chatEl.appendChild(message);
   scrollToBottom();
 
-  return { message };
+  return bubble;
 }
 
 async function sendMessage(message) {
@@ -126,19 +167,24 @@ formEl.addEventListener("submit", async (e) => {
   addMessage({ role: "user", text, meta: nowLabel() });
 
   setBusy(true);
-  const typing = addTypingIndicator();
+  const typingBubble = addTypingMessage();
 
   try {
     const reply = await sendMessage(text);
-    typing.message.remove();
-    addMessage({ role: "assistant", text: reply, meta: nowLabel() });
+    // Replace the typing indicator with the actual response (Markdown-rendered).
+    setBubbleContent(typingBubble, "assistant", reply);
+    const metaEl = typingBubble.parentElement?.querySelector?.(".meta");
+    if (metaEl) metaEl.textContent = nowLabel();
+    scrollToBottom();
   } catch (err) {
-    typing.message.remove();
-    addMessage({
-      role: "assistant",
-      text: `Sorry — something went wrong.\n\n${err.message}`,
-      meta: nowLabel(),
-    });
+    setBubbleContent(
+      typingBubble,
+      "assistant",
+      `Sorry — something went wrong.\n\n${err.message}`
+    );
+    const metaEl = typingBubble.parentElement?.querySelector?.(".meta");
+    if (metaEl) metaEl.textContent = nowLabel();
+    scrollToBottom();
   } finally {
     setBusy(false);
     inputEl.focus();
