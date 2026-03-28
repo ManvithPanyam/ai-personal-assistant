@@ -25,6 +25,10 @@ UI (HTML/CSS/JS) → FastAPI (`POST /chat`) → Google ADK Agent → Gemini → 
 ## Live Demo
 https://ai-personal-assistant-9ybs.onrender.com
 
+## 🖥️ Demo
+
+![AI Assistant Screenshot](screenshots/app.png)
+
 ## Example Interaction
 **User:** Create a 30-minute study plan for learning Python lists.
 
